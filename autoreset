@@ -16,7 +16,7 @@ def set_stdin_to_nonblocking():
 
 def send_reset_pulse():
     """ Send reset pulse to MCU on reset line """
-    pin = 11
+    pin = 13
     GPIO.setup(pin, GPIO.OUT)
     GPIO.output(pin, GPIO.HIGH)
     time.sleep(0.12)
