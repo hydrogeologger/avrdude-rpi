@@ -1,3 +1,5 @@
 #!/bin/sh
+#/usr/bin/avrdude-autoreset
 
-strace -o "|autoreset" -eioctl /usr/bin/avrdude-original $@
+strace -o "|autoreset" -eioctl /usr/bin/avrdude-original "$@"
+echo "Ignore broken pipe errors if Done Uploading"

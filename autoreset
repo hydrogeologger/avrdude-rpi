@@ -1,35 +1,46 @@
 #!/usr/bin/python
+#/usr/bin/autoreset
 
-import RPi.GPIO as GPIO
 import sys, os, re, time, fcntl
+import RPi.GPIO as GPIO
 
-fd = sys.stdin.fileno()
-fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
 GPIO.setmode(GPIO.BOARD)
-dtr = re.compile('.+TIOCM_DTR.+')
-start = time.time()
 
-def reset():
-  pin = 11
-  GPIO.setup(pin, GPIO.OUT)
-  GPIO.output(pin, GPIO.HIGH)
-  time.sleep(0.12)
-  GPIO.output(pin, GPIO.LOW)
+
+def set_stdin_to_nonblocking():
+    """ Sets STDIN to be non-blocking """
+    fd = sys.stdin.fileno()
+    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+def send_reset_pulse():
+    """ Send reset pulse to MCU on reset line """
+    pin = 11
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.HIGH)
+    time.sleep(0.12)
+    GPIO.output(pin, GPIO.LOW)
 
 def process():
-  while True:
-    try: 
-      duration = time.time() - start
-      input = sys.stdin.readline().strip()
-      if dtr.match(input):
-        reset()
-        return
-      elif duration > 5000:
-        return
-    except:
-      continue
+    """ Detects TIOCM_DTR call from ioctl_tty from STDIN """
+    dtr = re.compile('.+TIOCM_DTR.+')
+    start = time.time()
+    while True:
+        try:
+            duration = time.time() - start
+            stdin_text = sys.stdin.readline().strip()
+            if dtr.match(stdin_text):
+                send_reset_pulse()
+                return
+            elif duration > 5000:
+                return
+        except Exception:
+            continue
 
-process()
-print "done with autoreset"
+
+if __name__ == "__main__":
+    set_stdin_to_nonblocking()
+    process()
+    GPIO.cleanup()
+    print("Done with autoreset")

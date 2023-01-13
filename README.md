@@ -11,11 +11,18 @@ Instructions:
 
 Copy both files into your /usr/bin directory, then rename the original avrdude to avrdude-original
 and symlink avrdude-autoreset to become avrdude.
-
-    cp autoreset /usr/bin
-    cp avrdude-autoreset /usr/bin
-    mv /usr/bin/avrdude /usr/bin/avrdude-original
-    ln -s /usr/bin/avrdude-autoreset /usr/bin/avrdude
+```bash
+cp autoreset /usr/bin
+cp avrdude-autoreset /usr/bin
+```
+```bash
+# Backing up original avrdude, make sure you need to use this command or else you will replace backup with our own avrdude-autoreset
+mv /usr/bin/avrdude /usr/bin/avrdude-original
+```
+```bash
+# Symlink avrdude to avrdude-autoreset
+ln -s /usr/bin/avrdude-autoreset /usr/bin/avrdude
+```
 
 Modify the autoreset script to use the pin that you wired up to the reset pin.  See the line in
 autoreset where we do "pin = 11" and change the 11 to your gpio pin number.
