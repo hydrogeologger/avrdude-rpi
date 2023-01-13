@@ -1,11 +1,23 @@
 #!/usr/bin/python
+"""
+# Python script to check ioctl_tty for DTR send signal and toggle GPIO for avrdude.
 #/usr/bin/autoreset
+#
+# #References:
+# https://github.com/deanmao/avrdude-rpi
+# https://github.com/mharizanov/avrdude-rpi
+# https://github.com/SpellFoundry/avrdude-rpi
+# https://github.com/openenergymonitor/avrdude-rpi
+"""
 
-import sys, os, re, time, fcntl
+import sys, os, time, fcntl
 import RPi.GPIO as GPIO
 
-
+## Configure ##
 GPIO.setmode(GPIO.BOARD)
+_RESET_PIN = 13 # BOARD: 13 = BCM: 27
+_PULSE_TIME = 0.12  # Seconds
+_TIMEOUT = 60  # Seconds
 
 
 def set_stdin_to_nonblocking():
@@ -14,29 +26,28 @@ def set_stdin_to_nonblocking():
     fl = fcntl.fcntl(fd, fcntl.F_GETFL)
     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-def send_reset_pulse():
-    """ Send reset pulse to MCU on reset line """
-    pin = 13
+
+def send_reset_pulse(pin, pulse_time):
+    """ Send reset pulse to MCU on reset line over GPIO pin """
     GPIO.setup(pin, GPIO.OUT)
     GPIO.output(pin, GPIO.HIGH)
-    time.sleep(0.12)
+    time.sleep(pulse_time)
     GPIO.output(pin, GPIO.LOW)
+
 
 def process():
     """ Detects TIOCM_DTR call from ioctl_tty from STDIN """
-    dtr = re.compile('.+TIOCM_DTR.+')
+    _DTR = "TIOCM_DTR"
+    _IOCTL_CMD = "TIOCMGET"
     start = time.time()
     while True:
-        try:
-            duration = time.time() - start
-            stdin_text = sys.stdin.readline().strip()
-            if dtr.match(stdin_text):
-                send_reset_pulse()
-                return
-            elif duration > 5000:
-                return
-        except Exception:
-            continue
+        duration = time.time() - start
+        stdin_text = sys.stdin.readline()
+        if _DTR in stdin_text:
+            send_reset_pulse(_RESET_PIN, _PULSE_TIME)
+            return
+        elif duration > _TIMEOUT:
+            return
 
 
 if __name__ == "__main__":
